@@ -42,12 +42,12 @@ var version = "draft"
 
 
 func main() {
-
 	var v bool
 	var name, port, serve, route string
 	flag.BoolVar(&v, "v", false, "show version")
 	flag.StringVar(&serve, "serve", "127.0.0.1:8080", "host or host:port of the proxied service")
-	flag.StringVar(&route, "route", "/proxy", "reverse proxy path to join the proxied service")
+	// WORKAROUND do not use absolute path (starting with /), because go runtime expands as a directory
+	flag.StringVar(&route, "route", "", "relative path to the proxied service, defaults to /, on WINDOWS : no not prefix with /")
 	flag.StringVar(&port, "port", "9090", "ip port of reverse proxy")
 	flag.StringVar(&name, "name", "SmartProxy", "name of the service")
 	flag.Parse()
@@ -65,24 +65,25 @@ func main() {
 
 	// start http server
 	go func() {
+		_="breakpoint"
+
 		// register reverse proxy
 		endpoint := &url.URL{Scheme:"http", Host:serve}
 		proxy := httputil.NewSingleHostReverseProxy(endpoint) // *ReverseProxy
-		// Make sure the pattern ends with a / to serve all traffic to the proxy
-		if !(strings.HasSuffix(route, "/")) {
-			route = route + "/"
+		pattern := computeProxyPath(route)
+		http.HandleFunc(pattern, proxy.ServeHTTP)
+
+		// register health check, except if proxy is not registered on /health
+		// TODO : check if the / suffix does not do the trick
+		if pattern != "/health/" {
+			http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				fmt.Fprintf(w, `{ "state":"active", "name":"%s", "port":"%s", "serving":"http://%s%s"}`, name, port, serve, pattern)
+			})
 		}
-		http.HandleFunc(route, proxy.ServeHTTP)
 
-		// register health check endpoint
-		//TODO : reject route == "/health"
-		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			fmt.Fprintf(w, `{ "state":"active", "name":"%s", "port":"%s", "serving":"%s"  }`, name, port, serve)
-		})
-
-		// add a default route if reverse proxy does not register on /
-		if route != "/" {
+		// add a default route if the proxy is not registered on /
+		if pattern != "/" {
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				log.Printf("[INFO] No route registered for %s", r.RequestURI)
 				w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -91,7 +92,7 @@ func main() {
 			})
 		}
 
-		log.Printf("[INFO] Listening on port %s, serving %s", port, serve)
+		log.Printf("[INFO] Listening on port %s, serving http://%s%s", port, serve, pattern)
 		if err := http.ListenAndServe(":" + port, nil); err != nil {
 			log.Fatal("[FATAL] ",err)
 		}
@@ -103,3 +104,18 @@ func main() {
 	<-quit
 }
 
+func computeProxyPath(route string) string {
+	// Amend a starting and ending / to the route
+	//    - starting / is due to an issue on windows with Args, which requires to pass the route arg as relative (no leading /)
+	//           see https://golang.org/src/os/proc.go, line 19
+	//           see https://golang.org/src/syscall/exec_windows.go, line 156
+	//    - ending / is required to serve all traffic to the proxy /route, /route/ and /route/*, and not only the /route URL
+	pattern := route
+	if !(strings.HasPrefix(pattern, "/")) {
+		pattern = "/" + pattern
+	}
+	if !(strings.HasSuffix(pattern, "/")) {
+		pattern = pattern + "/"
+	}
+	return pattern
+}
