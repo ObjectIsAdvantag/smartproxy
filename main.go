@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 
 	"net/url"
 	"net/http"
@@ -43,9 +44,10 @@ var version = "draft"
 func main() {
 
 	var v bool
-	var name, port, serve string
+	var name, port, serve, route string
 	flag.BoolVar(&v, "v", false, "show version")
-	flag.StringVar(&serve, "ip", "127.0.0.1:8080", "address of the proxied service")
+	flag.StringVar(&serve, "serve", "127.0.0.1:8080", "host or host:port of the proxied service")
+	flag.StringVar(&route, "route", "/proxy", "reverse proxy path to join the proxied service")
 	flag.StringVar(&port, "port", "9090", "ip port of reverse proxy")
 	flag.StringVar(&name, "name", "SmartProxy", "name of the service")
 	flag.Parse()
@@ -63,22 +65,41 @@ func main() {
 
 	// start http server
 	go func() {
-		log.Printf("[INFO] Listening on port %s, serving %s", port, serve)
-		proxy := httputil.NewSingleHostReverseProxy(&url.URL{
+		// register reverse proxy
+		endpoint := &url.URL{
 			Scheme: "http",
 			Host:   serve,
+		}
+		proxy := httputil.NewSingleHostReverseProxy(endpoint) // *ReverseProxy
+		// Make sure the pattern ends with a / to serve all traffic to the proxy
+		if !strings.HasSuffix(route, "/") {
+			route = route + "/"
+		}
+		http.HandleFunc(route, proxy.ServeHTTP)
+
+		// register health check endpoint
+		//TODO : reject route == "/health"
+		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, "{ 'state':'active', 'name':%s, 'port':%s, 'serving':%s  }", name, port, serve)
 		})
-		if err := http.ListenAndServe(":" + port, proxy); err != nil {
+
+		// add a default route if reverse proxy does not register on /
+		if route != "/" {
+			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				log.Printf("[INFO] No route registered for %s", r.RequestURI)
+				w.WriteHeader(http.StatusNotFound)
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprintf(w, "{ 'state':'error', 'description':'nothing here' }")
+			})
+		}
+
+		log.Printf("[INFO] Listening on port %s, serving %s", port, serve)
+		if err := http.ListenAndServe(":" + port, nil); err != nil {
 			log.Fatal("[FATAL] ",err)
 		}
 	}()
-
-	// register health check endpoint
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-		//w.Write(byte[]("{ 'state':'ok', 'name':'smart proxy', 'port':'9090', 'serving':'127.0.0.1:8080'  }"))
-		fmt.Fprintf(w, "{ 'state':'ok', 'name':'smart proxy', 'port':'9090', 'serving':'127.0.0.1:8080'  }")
-	})
 
 	// run until we get a signal
 	quit := make(chan os.Signal, 1)

@@ -9,6 +9,10 @@ default: build
 build:
 	go build $(GOFLAGS)
 
+.PHONY: debug
+debug:
+	godebug build $(GOFLAGS)
+
 .PHONY: linux
 linux:
 	GOOS=linux GOARCH=amd64 go build $(GOFLAGS)

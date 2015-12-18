@@ -18,9 +18,9 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		log.Printf("---> %s %s", req.Method, req.URL.String())
 
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Header().Add("Content-Type", "application/json")
-		fmt.Fprint(w, "{ \"state\":\"ok\" }")
+		fmt.Fprint(w, "{ 'state':'ok' }")
 	})
 
 	http.ListenAndServe(":"+port, nil)
