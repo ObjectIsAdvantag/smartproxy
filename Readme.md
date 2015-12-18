@@ -14,8 +14,6 @@ SmartProxy acts as a reverse proxy that
 - allows to inspect them
 - allows to modify them : YOU take action
 
-SmartProxy Extensible architecture
-
 
 # Roadmap
 
@@ -26,6 +24,8 @@ SmartProxy Extensible architecture
 [ ] extract API model
 
 [ ] enrich model
+
+[ ] admin api
 
 [ ] extensibility
 
