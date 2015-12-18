@@ -66,13 +66,10 @@ func main() {
 	// start http server
 	go func() {
 		// register reverse proxy
-		endpoint := &url.URL{
-			Scheme: "http",
-			Host:   serve,
-		}
+		endpoint := &url.URL{Scheme:"http", Host:serve}
 		proxy := httputil.NewSingleHostReverseProxy(endpoint) // *ReverseProxy
 		// Make sure the pattern ends with a / to serve all traffic to the proxy
-		if !strings.HasSuffix(route, "/") {
+		if !(strings.HasSuffix(route, "/")) {
 			route = route + "/"
 		}
 		http.HandleFunc(route, proxy.ServeHTTP)
@@ -80,18 +77,17 @@ func main() {
 		// register health check endpoint
 		//TODO : reject route == "/health"
 		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, "{ 'state':'active', 'name':%s, 'port':%s, 'serving':%s  }", name, port, serve)
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			fmt.Fprintf(w, `{ "state":"active", "name":"%s", "port":"%s", "serving":"%s"  }`, name, port, serve)
 		})
 
 		// add a default route if reverse proxy does not register on /
 		if route != "/" {
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				log.Printf("[INFO] No route registered for %s", r.RequestURI)
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
 				w.WriteHeader(http.StatusNotFound)
-				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprintf(w, "{ 'state':'error', 'description':'nothing here' }")
+				fmt.Fprint(w, `{ "state":"error", "description":"nothing here" }`)
 			})
 		}
 
