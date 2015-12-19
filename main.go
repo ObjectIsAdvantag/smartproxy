@@ -25,7 +25,6 @@ import (
 
 	"net/url"
 	"net/http"
-	"net/http/httputil"
 )
 
 
@@ -39,17 +38,16 @@ import (
 var version = "draft"
 
 
-
-
 func main() {
 	var v bool
-	var name, port, serve, route string
+	var name, port, serve, route, healthcheck string
 	flag.BoolVar(&v, "v", false, "show version")
-	flag.StringVar(&serve, "serve", "127.0.0.1:8080", "host or host:port of the proxied service")
+	flag.StringVar(&serve, "serve", "127.0.0.1:8080", "host or host:port of the proxied service, defaults to 127.0.0.1:8080")
 	// WORKAROUND do not use absolute path (starting with /), because go runtime expands as a directory
-	flag.StringVar(&route, "route", "", "relative path to the proxied service, defaults to /, on WINDOWS : no not prefix with /")
-	flag.StringVar(&port, "port", "9090", "ip port of reverse proxy")
-	flag.StringVar(&name, "name", "SmartProxy", "name of the service")
+	flag.StringVar(&route, "route", "", "relative path to the proxied service, defaults to /, on WINDOWS : do not prefix with /")
+	flag.StringVar(&port, "port", "9090", "ip port of reverse proxy, defaults to 9090")
+	flag.StringVar(&name, "name", "SmartProxy", "name of the service, defaults to SmartProxy")
+	flag.StringVar(&healthcheck, "healthcheck", "/ping", "healthcheck path, defaults to /alive, on WINDOWS : do not prefix with /")
 	flag.Parse()
 
 	if v {
@@ -65,24 +63,21 @@ func main() {
 
 	// start http server
 	go func() {
-		_="breakpoint"
-
 		// register reverse proxy
 		endpoint := &url.URL{Scheme:"http", Host:serve}
-		proxy := httputil.NewSingleHostReverseProxy(endpoint) // *ReverseProxy
 		pattern := computeProxyPath(route)
+		proxy := TransparentReverseProxy(endpoint, &pattern) // *ReverseProxy
 		http.HandleFunc(pattern, proxy.ServeHTTP)
 
-		// register health check, except if proxy is not registered on /health
-		// TODO : check if the / suffix does not do the trick
-		if pattern != "/health/" {
-			http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json; charset=utf-8")
-				fmt.Fprintf(w, `{ "state":"active", "name":"%s", "port":"%s", "serving":"http://%s%s"}`, name, port, serve, pattern)
-			})
-		}
+		// register health check
+		ping := computeHealthcheckPath(healthcheck)
+		http.HandleFunc(ping, func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("[INFO] Health check")
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			fmt.Fprintf(w, `{ "version":"%s", "state":"active", "name":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "healthcheck":"%s"}`, version, name, port, serve, pattern, healthcheck)
+		})
 
-		// add a default route if the proxy is not registered on /
+		// add a default route and an healthcheck if the proxy is not registered on /
 		if pattern != "/" {
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				log.Printf("[INFO] No route registered for %s", r.RequestURI)
@@ -92,7 +87,7 @@ func main() {
 			})
 		}
 
-		log.Printf("[INFO] Listening on port %s, serving http://%s%s", port, serve, pattern)
+		log.Printf("[INFO] Listening on port %s, serving http://%s via %s", port, serve, pattern)
 		if err := http.ListenAndServe(":" + port, nil); err != nil {
 			log.Fatal("[FATAL] ",err)
 		}
@@ -105,8 +100,8 @@ func main() {
 }
 
 func computeProxyPath(route string) string {
-	// Amend a starting and ending / to the route
-	//    - starting / is due to an issue on windows with Args, which requires to pass the route arg as relative (no leading /)
+	// Ensure a leading and ending / to the route
+	//    - leading / is due to an issue on windows with Args, which requires to pass the route arg as relative (no leading /)
 	//           see https://golang.org/src/os/proc.go, line 19
 	//           see https://golang.org/src/syscall/exec_windows.go, line 156
 	//    - ending / is required to serve all traffic to the proxy /route, /route/ and /route/*, and not only the /route URL
@@ -119,3 +114,13 @@ func computeProxyPath(route string) string {
 	}
 	return pattern
 }
+
+func computeHealthcheckPath(route string) string {
+	// Ensure a leading / to the route
+	pattern := route
+	if !(strings.HasPrefix(pattern, "/")) {
+		pattern = "/" + pattern
+	}
+	return pattern
+}
+
