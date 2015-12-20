@@ -25,6 +25,8 @@ import (
 
 	"net/url"
 	"net/http"
+
+    _ "expvar" // adds a memstats endpoint handler at /debug/vars
 )
 
 
@@ -59,7 +61,7 @@ func main() {
 		log.Fatalf("[FATAL] Invalid port: %s (%s)\n", port, err)
 	}
 
-	log.Printf("[INFO] Starting version %s of %s", version, name)
+	log.Printf("[INFO] Starting %s, version: %s", name, version)
 
 	// start http server
 	go func() {
@@ -87,7 +89,8 @@ func main() {
 			})
 		}
 
-		log.Printf("[INFO] Listening on port %s, serving http://%s via %s", port, serve, pattern)
+		log.Printf("[INFO] Listening on http://localhost:%s\n", port)
+		log.Printf("[INFO] Serving http://%s via path %s\n", serve, pattern)
 		if err := http.ListenAndServe(":" + port, nil); err != nil {
 			log.Fatal("[FATAL] ",err)
 		}
@@ -109,7 +112,7 @@ func computeProxyPath(route string) string {
 	if !(strings.HasPrefix(pattern, "/")) {
 		pattern = "/" + pattern
 	}
-	if !(strings.HasSuffix(pattern, "/")) {
+	if !(strings.HasSuffix(pattern, "/")) {g
 		pattern = pattern + "/"
 	}
 	return pattern
