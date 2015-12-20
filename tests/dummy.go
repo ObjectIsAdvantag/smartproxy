@@ -19,7 +19,9 @@ func main() {
 	addRoutes()
 	addRoutesWithoutContentTypes() // automatically computed by golang
 
-	http.ListenAndServe(":"+port, nil)
+	if err := http.ListenAndServe(":" + port, nil); err != nil {
+		log.Fatal("[FATAL] ",err)
+	}
 }
 
 
@@ -64,8 +66,6 @@ func addRoutes() {
 
 
 func addRoutesWithoutContentTypes() {
-
-
 
 	http.HandleFunc("/untyped", func(w http.ResponseWriter, req *http.Request) {
 		log.Printf("---> %s %s", req.Method, req.URL.String())
