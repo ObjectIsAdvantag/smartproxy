@@ -112,7 +112,7 @@ func computeProxyPath(route string) string {
 	if !(strings.HasPrefix(pattern, "/")) {
 		pattern = "/" + pattern
 	}
-	if !(strings.HasSuffix(pattern, "/")) {g
+	if !(strings.HasSuffix(pattern, "/")) {
 		pattern = pattern + "/"
 	}
 	return pattern

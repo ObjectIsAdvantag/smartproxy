@@ -38,18 +38,17 @@ SmartProxy acts as a reverse proxy that
 # Feeling like giving it a try
 
 1. start the service you want to proxy, or launch the provides test service
- 
-   - "> go run tests/dummy.go" to start
-   - check http://localhost:8080/ (/json /txt)
-
-2. start smart-proxy : "go run main.go -route proxy"
-
+   - start with "> go run tests/dummy.go" 
+   - check "> curl -X GET http://localhost:8080/" and also /json /txt
+2. start smart-proxy : "> go run *.go -route proxy"
+   - 2015/12/20 19:25:49 [INFO] Starting SmartProxy, version: draft
+   - 2015/12/20 19:25:49 [INFO] Listening on http://localhost:9090
+   - 2015/12/20 19:25:49 [INFO] Serving http://127.0.0.1:8080 via path /proxy/
 3. try a few URLs
-
    - curl -X GET http://localhost:9090/
    - curl -X GET http://localhost:9090/proxy/
    - curl -X GET http://localhost:9090/proxy/json
-   - curl -X GET http://localhost:9090/health
+   - curl -X GET http://localhost:9090/ping
 
 
 # License
