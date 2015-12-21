@@ -38,14 +38,22 @@ SmartProxy acts as a reverse proxy that
 
 # Feeling like giving it a try
 
-## Start from an executable
+## Easy does it : start from an executable
 
 Go to github / releases,
-Pick the executable that suits your platform
-Run it
-Example : ./smart-proxy -route proxy -port 9090 -serve 127.0.0.1:8080
 
-## If you have golang on your platform
+Pick the executable that suits your platform
+
+Run it
+
+```
+linux# smart-proxy -route proxy -port 9090 -serve 127.0.0.1:8080
+
+windows > ./smart-proxy.exe -route proxy -port 9090 -serve 127.0.0.1:8080
+```
+
+## You gopher (have golang installed locally)
+
 1. start the service you want to proxy, or launch the provides test service
    - start with "> go run tests/dummy.go" 
    - check "> curl -X GET http://localhost:8080/" and also /json /txt
@@ -61,26 +69,22 @@ Example : ./smart-proxy -route proxy -port 9090 -serve 127.0.0.1:8080
 
 ## Via Docker
 
-Pick the linux executable from releases 
-Buid your image with the provided Dockerfile
-Run it
+### On linux (pure assumption, need to be checked, please contribute :-))
 
-docker run <image-name> -route proxy -port 9090 -serve 127.0.0.1:8080
- 
-### With Docker 
-
-- Create a machine
-- Build the image from the provided Dockerfile
+- Clone this repo
+- Pick the linux executable from releases 
+- Buid your image with the provided Dockerfile
 - Run it
 
 ```
-> docker run -d -p 9090:9090 <image-name> -route proxy -serve 192.168.99.1:8080
+docker run -d -p 9090:9090 <image-name> -route proxy -port 9090 -serve 127.0.0.1:8080
 ```
 
-### Docker Toolbox user for Windows
 
-I personally use an home-made set of bash commands
-see https://github.com/ObjectIsAdvantag/my-docker-toolbox
+### Docker Toolbox 
+
+Note for Windows gophers : I personally use an home-made set of bash commands : 
+check https://github.com/ObjectIsAdvantag/my-docker-toolbox
 
 ```
 > git clone https://github.com/ObjectIsAdvantag/smart-proxy
