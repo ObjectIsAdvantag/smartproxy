@@ -42,14 +42,20 @@ SmartProxy acts as a reverse proxy that
 
 Go to github / releases,
 
-Pick the executable that suits your platform
+Pick the executables that suits your platform : smart-proxy and dummy test service
 
 Run it
 
 ```
-linux# smart-proxy -route proxy -port 9090 -serve 127.0.0.1:8080
+# on linux
+> smart-proxy -route proxy -port 9090 -serve 127.0.0.1:8080
+> tests/dummy
+```
 
-windows > ./smart-proxy.exe -route proxy -port 9090 -serve 127.0.0.1:8080
+```
+# on windows
+> ./smart-proxy.exe -route proxy -port 9090 -serve 127.0.0.1:8080
+> tests/dummy.exe
 ```
 
 ## You gopher (have golang installed locally)
@@ -77,7 +83,7 @@ windows > ./smart-proxy.exe -route proxy -port 9090 -serve 127.0.0.1:8080
 - Run it
 
 ```
-docker run -d -p 9090:9090 <image-name> -route proxy -port 9090 -serve 127.0.0.1:8080
+> docker run -d -p 9090:9090 <image-name> -route proxy -port 9090 -serve 127.0.0.1:8080
 ```
 
 
@@ -89,12 +95,11 @@ check https://github.com/ObjectIsAdvantag/my-docker-toolbox
 ```
 > git clone https://github.com/ObjectIsAdvantag/smart-proxy
 > dmcreate docker-smartproxy    // creates a new box
-> dminit                        // initialise the toolbox env
-> dmls                          // to retreive your box ip, note the your local windows host can usually be reached from containers at .1
+> dminit                        // initializes the toolbox env
+> dmls                          // display your box ip address, simply replace suffix with 1 to get the address where your containers can reach your dev machine
 > dibuild smart-proxy .         // builds the image
-> dimg 1                        // select the image that has just been created as current
-> drun                          // create and launches a new container
-
+> dimg 1                        // selects the image that has just been created as current
+> drun                          // creates and launches a new container
 command ?   [command|(default)]: -route proxy -serve 192.168.99.1:8080
 detach or interactive ? [d/(i)]: i
 expose ports ? HOST:CONTAINER : 9090:9090
