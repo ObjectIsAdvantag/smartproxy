@@ -9,7 +9,7 @@ SmartProxy acts as a reverse proxy that
 - allows to inspect them
 - allows to modify them : YOU take action
 
- *  Inspired by eBay/fabio, goproxy
+ *  Inspired by eBay/fabio, mitmproxy, WireMock, mashape/kong
  */
 package main
 
@@ -26,7 +26,7 @@ import (
 	"net/url"
 	"net/http"
 
-    _ "expvar" // adds a memstats endpoint handler at /debug/vars
+    // _ "expvar" // adds a memstats endpoint handler at /debug/vars
 )
 
 
@@ -41,9 +41,10 @@ var version = "0.1"
 
 
 func main() {
-	var v bool
+	var showVersion, dumpRequest bool
 	var name, port, serve, route, healthcheck string
-	flag.BoolVar(&v, "v", false, "show version")
+	flag.BoolVar(&showVersion, "v", false, "show version")
+	flag.BoolVar(&dumpRequest, "dump", true, "dumps ingoing and outgoing proxied traffic")
 	flag.StringVar(&serve, "serve", "127.0.0.1:8080", "host or host:port of the proxied service, defaults to 127.0.0.1:8080")
 	// WORKAROUND do not use absolute path (starting with /), because go runtime expands as a directory
 	flag.StringVar(&route, "route", "", "relative path to the proxied service, defaults to /, on WINDOWS : do not prefix with /")
@@ -52,7 +53,7 @@ func main() {
 	flag.StringVar(&healthcheck, "healthcheck", "/ping", "healthcheck path, defaults to /alive, on WINDOWS : do not prefix with /")
 	flag.Parse()
 
-	if v {
+	if showVersion {
 		fmt.Printf("SmartProxy version %s, build undefined", version)
 		return
 	}
@@ -65,11 +66,12 @@ func main() {
 
 	// start http server
 	go func() {
-		// register reverse proxy
+		// register reverse proxy and specified middlewares
 		endpoint := &url.URL{Scheme:"http", Host:serve}
 		pattern := computeProxyPath(route)
-		proxy := TransparentReverseProxy(endpoint, &pattern) // *ReverseProxy
-		http.HandleFunc(pattern, proxy.ServeHTTP)
+		proxy := CreateReverseProxy(endpoint, &pattern) // *ReverseProxy
+		proxyHandler := RegisterMiddleware(proxy, dumpRequest) // wrap proxy if necessary
+		http.Handle(pattern, proxyHandler)
 
 		// register health check
 		ping := computeHealthcheckPath(healthcheck)
@@ -79,7 +81,7 @@ func main() {
 			fmt.Fprintf(w, `{ "version":"%s", "state":"active", "name":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "healthcheck":"%s"}`, version, name, port, serve, pattern, healthcheck)
 		})
 
-		// add a default route and an healthcheck if the proxy is not registered on /
+		// add a default route if the proxy is not registered on /
 		if pattern != "/" {
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				log.Printf("[INFO] No route registered for %s", r.RequestURI)
