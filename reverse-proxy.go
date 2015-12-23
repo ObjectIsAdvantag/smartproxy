@@ -2,7 +2,7 @@
 Adaptation of http/httputil/NewSingleHostReverseProxy with no URL rewrite,
 ie, the proxy route/pattern is not prefixed to incoming requests URLs
  */
-package main
+package smartproxy
 
 import (
 	"strings"
@@ -38,8 +38,6 @@ func RegisterMiddleware(proxy *httputil.ReverseProxy, dump bool) http.Handler {
 func addRequestsDumper(proxy *httputil.ReverseProxy) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = "breakpoint"
-
 		path := r.URL.Path
 		requestBytes, err := httputil.DumpRequest(r, true)
 

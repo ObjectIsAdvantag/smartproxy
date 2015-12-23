@@ -11,7 +11,7 @@ SmartProxy acts as a reverse proxy that
 
  *  Inspired by eBay/fabio, mitmproxy, WireMock, mashape/kong
  */
-package main
+package smartproxy
 
 import (
 	"log"
@@ -37,7 +37,7 @@ import (
 // It is also set by the linker when fabio
 // is built via the Makefile or the build/docker.sh
 // script to ensure the correct version nubmer
-var version = "0.1"
+var version = "v0.2"
 
 
 func main() {

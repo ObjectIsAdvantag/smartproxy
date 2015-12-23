@@ -4,7 +4,7 @@ GOFLAGS = -tags netgo
 USERNAME = objectisadvantag
 
 
-default: build
+default:
 	./smart-proxy.exe
 
 .PHONY: build
@@ -22,10 +22,6 @@ linux:
 .PHONY: windows
 windows:
 	GOOS=windows GOARCH=amd64 go build $(GOFLAGS)
-
-.PHONY: install
-install:
-	go install $(GOFLAGS)make
 
 .PHONY: docker
 docker: linux

@@ -1,23 +1,26 @@
-package main
+/*
+
+Wrapper around http.ResponseWriter to capture egress traffic
+
+Inspired from Negroni : https://github.com/codegangsta/negroni/blob/master/response_writer.go
+ */
+package smartproxy
 
 import (
 	"net/http"
 	"log"
 )
 
-
+// TODO : to be removed if useless
 const (
 		NOT_STARTED		= 0
 		HEADERS			= 1
 		BODY			= 2
 		COMPLETED		= 3
 		ABORTED			= 4 // closed by the client
-		TIMED_OUT         = 5 // closed before completion
+		TIMED_OUT       = 5 // closed before completion
 )
 
-
-// Wrapper around http.ResponseWriter to customize egress traffic
-// Inspired from Negroni : https://github.com/codegangsta/negroni/blob/master/response_writer.go
 type captureWriter struct {
 	http.ResponseWriter
 	path 		string
@@ -75,10 +78,6 @@ func (cw captureWriter) Size() int {
 	return cw.size
 }
 
-
-/* TODO : check if required
-/
- */
 func (cw captureWriter) CloseNotify() <-chan bool {
 	return cw.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }

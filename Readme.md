@@ -25,12 +25,11 @@ SmartProxy acts as a reverse proxy that
       
 [ ] capture traffic
    - MIT license
-   - middelware support
    - stdout traffic capture
-   - in-memory traffic capture(10 latests requests)
-   - on-disk traffic capture
-
+   - release tag v0.2
+   
 [ ] inspect traffic
+   - in-memory traffic capture(10 latests requests)
 
 [ ] extract API model
 
@@ -39,6 +38,7 @@ SmartProxy acts as a reverse proxy that
 [ ] admin api
 
 [ ] extensibility
+   - on-disk traffic capture
 
 
 # Feeling like giving it a try
