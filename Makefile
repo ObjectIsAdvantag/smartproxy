@@ -1,6 +1,8 @@
 
 GOFLAGS = -tags netgo
 # GOFLAGS = -tags netgo -ldflags "-X main.version=$(shell git describe --tags)"
+USERNAME = objectisadvantag
+
 
 default: build
 	./smart-proxy.exe
@@ -25,12 +27,12 @@ windows:
 install:
 	go install $(GOFLAGS)make
 
-.PHONY: release
-release:
-	build/release.sh $(filter-out $@,$(MAKECMDGOALS))
-
 .PHONY: docker
-docker: build
-	build/docker.sh
+docker: linux
+	docker build -t $(USERNAME)/smartproxy .
+
+.PHONY: archive
+archive:
+	git archive --format=zip HEAD > smart-proxy.zip
 
 

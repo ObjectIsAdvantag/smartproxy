@@ -24,6 +24,11 @@ SmartProxy acts as a reverse proxy that
    - release tag : 0.1 
       
 [ ] capture traffic
+   - MIT license
+   - middelware support
+   - stdout traffic capture
+   - in-memory traffic capture(10 latests requests)
+   - on-disk traffic capture
 
 [ ] inspect traffic
 
@@ -78,11 +83,13 @@ Run it
 ### On linux (pure assumption, need to be checked, please contribute :-))
 
 - Clone this repo
-- Pick the linux executable from releases 
-- Buid your image with the provided Dockerfile
-- Run it
+- Pick the linux executable from releases or build it with command : "> make linux"
+- Build the docker image with the provided Dockerfile, "> docker build  -t objectisadvantag/smartproxy ."
+- Run it "> docker run -d -p 9090:9090 objectisadvantag/smartproxy:latest -route proxy -port 9090 -serve 127.0.0.1:8080"
 
 ```
+> make linux
+> docker build -t <image-name> .
 > docker run -d -p 9090:9090 <image-name> -route proxy -port 9090 -serve 127.0.0.1:8080
 ```
 
@@ -94,9 +101,10 @@ check https://github.com/ObjectIsAdvantag/my-docker-toolbox
 
 ```
 > git clone https://github.com/ObjectIsAdvantag/smart-proxy
+> make linux
 > dmcreate docker-smartproxy    // creates a new box
 > dminit                        // initializes the toolbox env
-> dmls                          // display your box ip address, simply replace suffix with 1 to get the address where your containers can reach your dev machine
+> dmip                          // display your box ip address, simply replace suffix with 1 to get the address where your containers can reach your dev machine
 > dibuild smart-proxy .         // builds the image
 > dimg 1                        // selects the image that has just been created as current
 > drun                          // creates and launches a new container
@@ -109,7 +117,7 @@ Launching...
    
 # License
 
-BSD
+MIT, see license file.
 
 Feel free to use, reuse, extend, and contribute
 
