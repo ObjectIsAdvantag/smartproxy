@@ -11,7 +11,7 @@ SmartProxy acts as a reverse proxy that
 
  *  Inspired by eBay/fabio, mitmproxy, WireMock, mashape/kong
  */
-package smartproxy
+package main
 
 import (
 	"log"
@@ -44,7 +44,7 @@ func main() {
 	var showVersion, dumpRequest bool
 	var name, port, serve, route, healthcheck string
 	flag.BoolVar(&showVersion, "v", false, "show version")
-	flag.BoolVar(&dumpRequest, "dump", true, "dumps ingoing and outgoing proxied traffic")
+	flag.BoolVar(&dumpRequest, "dump", false, "dumps ingoing and outgoing proxied traffic")
 	flag.StringVar(&serve, "serve", "127.0.0.1:8080", "host or host:port of the proxied service, defaults to 127.0.0.1:8080")
 	// WORKAROUND do not use absolute path (starting with /), because go runtime expands as a directory
 	flag.StringVar(&route, "route", "", "relative path to the proxied service, defaults to /, on WINDOWS : do not prefix with /")
@@ -54,7 +54,7 @@ func main() {
 	flag.Parse()
 
 	if showVersion {
-		fmt.Printf("SmartProxy version %s, build undefined", version)
+		fmt.Printf("SmartProxy version %s", version)
 		return
 	}
 
