@@ -4,8 +4,8 @@ GOFLAGS = -tags netgo
 USERNAME = objectisadvantag
 
 
-default:
-	./smart-proxy.exe
+default: build
+	./smartproxy.exe
 
 .PHONY: build
 build:

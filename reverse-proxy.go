@@ -2,7 +2,7 @@
 Adaptation of http/httputil/NewSingleHostReverseProxy with no URL rewrite,
 ie, the proxy route/pattern is not prefixed to incoming requests URLs
  */
-package smartproxy
+package main
 
 import (
 	"strings"

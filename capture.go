@@ -4,7 +4,7 @@ Wrapper around http.ResponseWriter to capture egress traffic
 
 Inspired from Negroni : https://github.com/codegangsta/negroni/blob/master/response_writer.go
  */
-package smartproxy
+package main
 
 import (
 	"net/http"
@@ -56,7 +56,7 @@ func (cw captureWriter) WriteHeader(status int) {
 
 func (cw captureWriter) Write(b []byte) (int, error) {
 	// TODO dump to memory or into some data lake
-	log.Printf("[DUMP] egress for %s\n", string(b))
+	log.Printf("[DUMP] egress for %s:\n%s", cw.path, string(b))
 
 	// Write bytes to response
 	size, err := cw.ResponseWriter.Write(b)
