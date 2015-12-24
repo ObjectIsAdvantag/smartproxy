@@ -23,9 +23,11 @@ SmartProxy acts as a reverse proxy that
    - tested on Linux / Docker, 6,9MB image (from scratch)
    - release tag : 0.1 
       
-[ ] capture traffic
+[x] capture traffic, writes to stdout
    - MIT license
-   - stdout traffic capture
+   - dump flag 
+   - captures requests/responses, 
+   - prints to stdout only (no in-memory, no disk writes)
    - release tag v0.2
    
 [ ] inspect traffic
