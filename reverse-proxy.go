@@ -15,41 +15,21 @@ import (
 
 
 func CreateReverseProxy(target *url.URL, pattern *string) *httputil.ReverseProxy {
-
-		director := func(req *http.Request) {
-			req.URL.Scheme = target.Scheme
-			req.URL.Host = target.Host
-			if *pattern != "/" {
-				req.URL.Path = "/" + strings.TrimPrefix(req.URL.Path, *pattern)
-			}
+	log.Printf("[INFO] Creating Reverse Proxy at %s\n", *pattern)
+	director := func(req *http.Request) {
+		req.URL.Scheme = target.Scheme
+		req.URL.Host = target.Host
+		if *pattern != "/" {
+			req.URL.Path = "/" + strings.TrimPrefix(req.URL.Path, *pattern)
 		}
-		return &httputil.ReverseProxy{Director: director}
-}
-
-func RegisterMiddleware(proxy *httputil.ReverseProxy, dump bool) http.Handler {
-    if !dump {
-		return proxy
 	}
-
-	log.Printf("[INFO] Registering middleware to dump traffic")
-	return addRequestsDumper(proxy)
+	return &httputil.ReverseProxy{Director: director}
 }
 
-func addRequestsDumper(proxy *httputil.ReverseProxy) http.Handler {
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-		requestBytes, err := httputil.DumpRequest(r, true)
-
-		if err != nil {
-			log.Printf("[DEBUG] Could not dump request %s: %s\n", path, err)
-		} else {
-			// TODO dump to memory or into some data lake
-			log.Printf("[DUMP] ingress for %s\n", string(requestBytes))
-		}
-
-		wrapped := NewCaptureWriter(w, path)
-		proxy.ServeHTTP(wrapped, r)
-	})
+func CreateCaptureMiddleware(proxy *httputil.ReverseProxy) http.Handler {
+	log.Printf("[INFO] Creating Middleware to capture traffic\n")
+	return CreateRequestsDumper(proxy)
 }
+
+
 

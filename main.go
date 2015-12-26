@@ -66,12 +66,16 @@ func main() {
 
 	// start http server
 	go func() {
-		// register reverse proxy and specified middlewares
+		// register reverse proxy and middlewares
 		endpoint := &url.URL{Scheme:"http", Host:serve}
 		pattern := computeProxyPath(route)
 		proxy := CreateReverseProxy(endpoint, &pattern) // *ReverseProxy
-		proxyHandler := RegisterMiddleware(proxy, dumpRequest) // wrap proxy if necessary
-		http.Handle(pattern, proxyHandler)
+		if dumpRequest {
+			handler := CreateCaptureMiddleware(proxy)
+			http.Handle(pattern, handler)
+		} else {
+			http.HandleFunc(pattern, proxy.ServeHTTP)
+		}
 
 		// register health check
 		ping := computeHealthcheckPath(healthcheck)

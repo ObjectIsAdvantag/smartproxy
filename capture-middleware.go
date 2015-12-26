@@ -7,11 +7,32 @@ Inspired from Negroni : https://github.com/codegangsta/negroni/blob/master/respo
 package main
 
 import (
-	"net/http"
 	"log"
+
+	"net/http"
+	"net/http/httputil"
 )
 
-// TODO : to be removed if useless
+func CreateRequestsDumper(proxy *httputil.ReverseProxy) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		requestBytes, err := httputil.DumpRequest(r, true)
+
+		if err != nil {
+			log.Printf("[DEBUG] Could not dump request %s: %s\n", path, err)
+		} else {
+			// TODO dump to memory or into some data lake
+			log.Printf("[DUMP] ingress for %s\n", string(requestBytes))
+		}
+
+		wrapped := NewCaptureWriter(w, path)
+		proxy.ServeHTTP(wrapped, r)
+	})
+}
+
+
+// TODO : to remove if happens to be useless
 const (
 		NOT_STARTED		= 0
 		HEADERS			= 1
