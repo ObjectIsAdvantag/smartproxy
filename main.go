@@ -27,7 +27,7 @@ import (
 	"net/http"
 
     // _ "expvar" // adds a memstats endpoint handler at /debug/vars
-	_ "net/http/pprof"
+	//_ "net/http/pprof"
 )
 
 
@@ -38,7 +38,7 @@ import (
 // It is also set by the linker when fabio
 // is built via the Makefile or the build/docker.sh
 // script to ensure the correct version nubmer
-var version = "v0.2"
+var version = "v0.3"
 
 
 func main() {

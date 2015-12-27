@@ -3,8 +3,12 @@ GOFLAGS = -tags netgo
 # GOFLAGS = -tags netgo -ldflags "-X main.version=$(shell git describe --tags)"
 USERNAME = objectisadvantag
 
-default: run
+default: all
 
+.PHONY: all
+all : clean run
+
+.PHONY: run
 run: build
 	./smartproxy.exe -dump -route proxy
 
@@ -28,8 +32,25 @@ windows:
 docker: linux
 	docker build -t $(USERNAME)/smartproxy .
 
+.PHONY: clean
+clean:
+	rm -f smartproxy smartproxy.exe smartproxy.zip smartproxy.debug
+
+.PHONY: erase
+erase:
+	rm -f capture.db
+
 .PHONY: archive
 archive:
-	git archive --format=zip HEAD > smart-proxy.zip
+	git archive --format=zip HEAD > smartproxy.zip
+
+
+
+
+
+
+
+
+
 
 

@@ -30,12 +30,12 @@ SmartProxy acts as a reverse proxy that
    - prints to stdout only (no in-memory, no disk writes)
    - release tag v0.2
    
-[i] store traffic in-memory
-   - tag each traffic flow (req/resp)
-   - create 3 data structures : ingress, egress, synthesis
-   - store in-memory traffic 
-   - set a maximum for in-memory traffic
-
+[x] store traffic in-memory
+   - tag each flow (req/resp) with a uuid
+   - create struct to store traffic : ingress, egress, synthesis
+   - store traffic via bolt
+   - release tag v0.3
+    
 [ ] inspect traffic
    
 [ ] extract API model
