@@ -61,7 +61,7 @@ func VolatileTrafficStorage () *TrafficStorage {
 	db.Update(func(tx *bolt.Tx) error {
 		bucket, err = tx.CreateBucket([]byte(BOLT_BUCKET))
 		if err != nil {
-			log.Printf("[STORAGE] cannot create bucket: %s", BOLT_BUCKET)
+			log.Printf("[STORAGE] cannot create bucket: %s, %s", BOLT_BUCKET, err)
 			return fmt.Errorf("create bucket: %s", err)
 		}
 		return nil

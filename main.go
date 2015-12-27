@@ -51,7 +51,7 @@ func main() {
 	flag.StringVar(&route, "route", "", "relative path to the proxied service, defaults to /, on WINDOWS : do not prefix with /")
 	flag.StringVar(&port, "port", "9090", "ip port of reverse proxy, defaults to 9090")
 	flag.StringVar(&name, "name", "SmartProxy", "name of the service, defaults to SmartProxy")
-	flag.StringVar(&healthcheck, "healthcheck", "/ping", "healthcheck path, defaults to /alive, on WINDOWS : do not prefix with /")
+	flag.StringVar(&healthcheck, "healthcheck", "/ping", "healthcheck endpoint, defaults to /ping, on WINDOWS : do not prefix with /")
 	flag.Parse()
 
 	if showVersion {
@@ -83,7 +83,7 @@ func main() {
 		http.HandleFunc(ping, func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[INFO] Health check")
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			fmt.Fprintf(w, `{ "version":"%s", "state":"active", "name":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "healthcheck":"%s"}`, version, name, port, serve, pattern, healthcheck)
+			fmt.Fprintf(w, `{ "version":"%s", "state":"active", "name":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "healthcheck":"%s", "dump":"%v"}`, version, name, port, serve, pattern, healthcheck, dumpRequest)
 		})
 
 		// add a default route if the proxy is not registered on /

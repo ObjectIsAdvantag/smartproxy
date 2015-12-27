@@ -6,10 +6,10 @@ USERNAME = objectisadvantag
 default: all
 
 .PHONY: all
-all : clean run
+all : clean build run
 
 .PHONY: run
-run: build
+run:
 	./smartproxy.exe -dump -route proxy
 
 .PHONY: build
