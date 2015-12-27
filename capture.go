@@ -17,23 +17,24 @@ import (
 )
 
 
-var db *storage.TrafficStorage = storage.VolatileTrafficStorage()
+var DB *storage.TrafficStorage = storage.VolatileTrafficStorage()
 
 
 func CreateTrafficDumper(proxy *httputil.ReverseProxy) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = "breakpoint"
 		start := time.Now()
 
 		requestBytes, err := httputil.DumpRequest(r, true)
 		if err == nil {
-			trace := db.CreateTrace()
+			trace := DB.CreateTrace()
 			trace.Start = start
 			trace.URI = r.URL.Path
 			trace.HttpStatus = http.StatusOK
 			trace.HttpMethod = r.Method
 			trace.Ingress = &storage.TrafficIngress{&requestBytes}
-			db.StoreTrace(trace)
+			DB.StoreTrace(trace)
 			log.Printf("[DUMP] traffic for request %s dumped with id: %s\n", trace.URI, trace.ID)
 
 			wrapped := NewCaptureWriter(w, trace)
@@ -81,6 +82,8 @@ func (cw captureWriter) WriteHeader(status int) {
 
 
 func (cw captureWriter) Write(bytes []byte) (int, error) {
+	_ = "breakpoint"
+
 	// TODO append bytes
 	cw.trace.Egress = &storage.TrafficEgress{&bytes}
 
@@ -94,8 +97,7 @@ func (cw captureWriter) Write(bytes []byte) (int, error) {
 	cw.trace.Length += size
 
 	log.Printf("[DUMP] egress for %s:\n%s", cw.trace.URI, string(bytes))
-	db.StoreTrace(cw.trace)
-
+	DB.StoreTrace(cw.trace)
 
 	return size, err
 }

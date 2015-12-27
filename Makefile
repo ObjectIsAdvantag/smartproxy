@@ -10,7 +10,7 @@ all : clean build run
 
 .PHONY: run
 run:
-	./smartproxy.exe -dump -route proxy
+	./smartproxy.exe -capture -route proxy
 
 .PHONY: build
 build:
@@ -18,7 +18,8 @@ build:
 
 .PHONY: debug
 debug:
-	godebug build $(GOFLAGS)
+	godebug build $(GOFLAGS) -instrument github.com/ObjectIsAdvantag/smartproxy/storage
+	./smartproxy.debug -capture -route proxy
 
 .PHONY: linux
 linux:
@@ -31,7 +32,6 @@ windows:
 .PHONY: docker
 docker: linux
 	docker build -t $(USERNAME)/smartproxy .
-
 .PHONY: clean
 clean:
 	rm -f smartproxy smartproxy.exe smartproxy.zip smartproxy.debug

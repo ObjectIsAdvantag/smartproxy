@@ -42,10 +42,11 @@ var version = "v0.3"
 
 
 func main() {
-	var showVersion, dumpRequest bool
-	var name, port, serve, route, healthcheck string
+	var showVersion, capture bool
+	var name, port, serve, route, healthcheck, viewer string
 	flag.BoolVar(&showVersion, "v", false, "show version")
-	flag.BoolVar(&dumpRequest, "dump", false, "dumps ingoing and outgoing proxied traffic")
+	flag.BoolVar(&capture, "capture", false, "activates the capture mode, where ingoing and outgoing proxied traffic is dumped")
+	flag.StringVar(&viewer, "viewer", "/traffic", "relative path to the realtime traffic viewer, only in capture mode, defaults to /traffic, on WINDOWS : do not prefix with /")
 	flag.StringVar(&serve, "serve", "127.0.0.1:8080", "host or host:port of the proxied service, defaults to 127.0.0.1:8080")
 	// WORKAROUND do not use absolute path (starting with /), because go runtime expands as a directory
 	flag.StringVar(&route, "route", "", "relative path to the proxied service, defaults to /, on WINDOWS : do not prefix with /")
@@ -67,27 +68,32 @@ func main() {
 
 	// start http server
 	go func() {
-		// register reverse proxy and middlewares
+		// register reverse proxy and middlewares if capture mode
 		endpoint := &url.URL{Scheme:"http", Host:serve}
-		pattern := computeProxyPath(route)
-		proxy := CreateReverseProxy(endpoint, &pattern) // *ReverseProxy
-		if dumpRequest {
+		proxyRoute := computeProxyPath(route)
+		proxy := CreateReverseProxy(endpoint, &proxyRoute) // *ReverseProxy
+		if capture {
+			// add middleware
 			handler := CreateCaptureMiddleware(proxy)
-			http.Handle(pattern, handler)
+			http.Handle(proxyRoute, handler)
+
+			// register traffic viewer
+			viewerRoute := computeTrafficViewerPath(viewer)
+			AddTrafficViewer(viewerRoute)
 		} else {
-			http.HandleFunc(pattern, proxy.ServeHTTP)
+			http.HandleFunc(proxyRoute, proxy.ServeHTTP)
 		}
 
 		// register health check
-		ping := computeHealthcheckPath(healthcheck)
-		http.HandleFunc(ping, func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("[INFO] Health check")
+		pingRoute := computeHealthcheckPath(healthcheck)
+		http.HandleFunc(pingRoute, func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("[INFO] hit health check")
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			fmt.Fprintf(w, `{ "version":"%s", "state":"active", "name":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "healthcheck":"%s", "dump":"%v"}`, version, name, port, serve, pattern, healthcheck, dumpRequest)
+			fmt.Fprintf(w, `{ "name":"%s", "version":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "capture":"%v", "healthcheck":"%s"}`, name, version, port, serve, proxyRoute, capture, healthcheck)
 		})
 
 		// add a default route if the proxy is not registered on /
-		if pattern != "/" {
+		if proxyRoute != "/" {
 			http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				log.Printf("[INFO] No route registered for %s", r.RequestURI)
 				w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -97,7 +103,7 @@ func main() {
 		}
 
 		log.Printf("[INFO] Listening on http://localhost:%s\n", port)
-		log.Printf("[INFO] Serving http://%s via path %s\n", serve, pattern)
+		log.Printf("[INFO] Serving http://%s via path %s\n", serve, proxyRoute)
 		if err := http.ListenAndServe(":" + port, nil); err != nil {
 			log.Fatal("[FATAL] ",err)
 		}
@@ -125,6 +131,17 @@ func computeProxyPath(route string) string {
 	return pattern
 }
 
+
+func computeTrafficViewerPath(route string) string {
+	// Ensure a leading / to the route
+	pattern := route
+	if !(strings.HasPrefix(pattern, "/")) {
+		pattern = "/" + pattern
+	}
+	return pattern
+}
+
+
 func computeHealthcheckPath(route string) string {
 	// Ensure a leading / to the route
 	pattern := route
@@ -133,4 +150,5 @@ func computeHealthcheckPath(route string) string {
 	}
 	return pattern
 }
+
 
