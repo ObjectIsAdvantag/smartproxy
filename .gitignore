@@ -25,12 +25,12 @@ _testmain.go
 *.debug
 *.test
 *.prof
+*.db
+.zip
 
 .idea/
 
 smartproxy
-smartproxy.exe
-smartproxy.debug
-smartproxy.zip
+
 
 

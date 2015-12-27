@@ -27,6 +27,7 @@ import (
 	"net/http"
 
     // _ "expvar" // adds a memstats endpoint handler at /debug/vars
+	_ "net/http/pprof"
 )
 
 

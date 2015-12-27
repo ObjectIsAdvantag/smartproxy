@@ -3,9 +3,10 @@ GOFLAGS = -tags netgo
 # GOFLAGS = -tags netgo -ldflags "-X main.version=$(shell git describe --tags)"
 USERNAME = objectisadvantag
 
+default: run
 
-default: build
-	./smartproxy.exe
+run: build
+	./smartproxy.exe -dump -route proxy
 
 .PHONY: build
 build:
