@@ -16,39 +16,43 @@ SmartProxy acts as a reverse proxy that
 
 # Roadmap
 
-[x] reverse proxy basics 
+[X] reverse proxy basics 
 
    - custom path, custom port, healthcheck endpoint
    - tested on Windows, 6,9 MB windows exe
    - tested on Linux / Docker, 6,9MB image (from scratch)
    - release tag : 0.1 
       
-[x] capture traffic, writes to stdout
+[X] capture traffic, writes to stdout
    - MIT license
    - dump flag 
    - captures requests/responses, 
    - prints to stdout only (no in-memory, no disk writes)
    - release tag v0.2
    
-[x] store traffic in-memory
+[X] store traffic on-disk
    - tag each flow (req/resp) with a uuid
    - create struct to store traffic : ingress, egress, synthesis
    - store traffic via bolt
    - release tag v0.3
     
-[ ] inspect traffic
+[x] inspect traffic
+   - added route to inspect captured traffic, /traffic  
+   - display traffic in HTML page (no json)
+   - latests traces, last/first trace
+   - TODO : next/prev
+   - TODO : update documentation
+   - TODO : release tag v0.4
    
 [ ] extract API model
 
 [ ] enrich model
 
 [ ] admin api
+   - dynamically modify configuration (change proxy address, capture on/off, erase capture database)
+   
 
-[ ] extensibility
-   - on-disk traffic capture
-
-
-# Feeling like giving it a try
+# Feel like giving it a try
 
 ## Easy does it : start from an executable
 
