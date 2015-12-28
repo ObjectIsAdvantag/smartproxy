@@ -17,13 +17,12 @@ import (
 )
 
 
-var DB *storage.TrafficStorage = storage.VolatileTrafficStorage()
+var DB *storage.TrafficStorage = storage.OnDiskTrafficStorage()
 
 
 func CreateTrafficDumper(proxy *httputil.ReverseProxy) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = "breakpoint"
 		start := time.Now()
 
 		requestBytes, err := httputil.DumpRequest(r, true)
@@ -35,7 +34,7 @@ func CreateTrafficDumper(proxy *httputil.ReverseProxy) http.Handler {
 			trace.HttpMethod = r.Method
 			trace.Ingress = &storage.TrafficIngress{&requestBytes}
 			DB.StoreTrace(trace)
-			log.Printf("[DUMP] traffic for request %s dumped with id: %s\n", trace.URI, trace.ID)
+			log.Printf("[DEBUG] PROXY traffic for request %s dumped with id: %s\n", trace.URI, trace.ID)
 
 			wrapped := NewCaptureWriter(w, trace)
 
@@ -44,7 +43,7 @@ func CreateTrafficDumper(proxy *httputil.ReverseProxy) http.Handler {
 			return
 		}
 
-		log.Printf("[DUMP] could not dump traffic for request %s: %s\n", r.URL.Path, err)
+		log.Printf("[WARNING] PROXY could not dump traffic for request %s: %s\n", r.URL.Path, err)
 		// TODO error handling
 		proxy.ServeHTTP(w, r)
 	})
@@ -60,6 +59,7 @@ const (
 		ABORTED			= 4 // closed by the client
 		TIMED_OUT       = 5 // closed before completion
 )
+
 
 type captureWriter struct {
 	http.ResponseWriter
@@ -82,21 +82,21 @@ func (cw captureWriter) WriteHeader(status int) {
 
 
 func (cw captureWriter) Write(bytes []byte) (int, error) {
-	_ = "breakpoint"
 
-	// TODO append bytes
+	// TODO append bytes if called several time
 	cw.trace.Egress = &storage.TrafficEgress{&bytes}
 
 	// Write bytes to response
 	size, err := cw.ResponseWriter.Write(bytes)
 	if err != nil {
-		log.Printf("[INFO] Could not write response bytes for request %s: %s\n",  cw.trace.URI, err)
+		log.Printf("[WARNING] PROXY Could not write response bytes for request %s: %s\n",  cw.trace.URI, err)
 		//TODO throw error
 	}
 
 	cw.trace.Length += size
+	cw.trace.End = time.Now()
 
-	log.Printf("[DUMP] egress for %s:\n%s", cw.trace.URI, string(bytes))
+	log.Printf("[DEBUG] PROXY egress for %s:\n%s", cw.trace.URI, string(bytes))
 	DB.StoreTrace(cw.trace)
 
 	return size, err

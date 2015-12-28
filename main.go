@@ -71,6 +71,7 @@ func main() {
 		// register reverse proxy and middlewares if capture mode
 		endpoint := &url.URL{Scheme:"http", Host:serve}
 		proxyRoute := computeProxyPath(route)
+		viewerRoute := computeTrafficViewerPath(viewer)
 		proxy := CreateReverseProxy(endpoint, &proxyRoute) // *ReverseProxy
 		if capture {
 			// add middleware
@@ -78,7 +79,6 @@ func main() {
 			http.Handle(proxyRoute, handler)
 
 			// register traffic viewer
-			viewerRoute := computeTrafficViewerPath(viewer)
 			AddTrafficViewer(viewerRoute)
 		} else {
 			http.HandleFunc(proxyRoute, proxy.ServeHTTP)
@@ -89,7 +89,7 @@ func main() {
 		http.HandleFunc(pingRoute, func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[INFO] hit health check")
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			fmt.Fprintf(w, `{ "name":"%s", "version":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "capture":"%v", "healthcheck":"%s"}`, name, version, port, serve, proxyRoute, capture, healthcheck)
+			fmt.Fprintf(w, `{ "name":"%s", "version":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "capture":"%v", "healthcheck":"%s, "inspect":"%s"}`, name, version, port, serve, proxyRoute, capture, healthcheck, viewerRoute)
 		})
 
 		// add a default route if the proxy is not registered on /
