@@ -9,7 +9,7 @@ import (
 
 	bolt "github.com/boltdb/bolt"
 
-	uuid "github.com/satori/go.uuid"
+	//uuid "github.com/satori/go.uuid"
 	"io"
 )
 
@@ -31,7 +31,7 @@ type TrafficStorage struct {
 }
 
 type TrafficTrace struct {
-	ID			string // unique identifier of the trace
+	ID			string  // unique identifier of the trace
 	Start		time.Time
 	End			time.Time
 	HttpStatus 	int
@@ -85,7 +85,12 @@ func (storage *TrafficStorage) close() {
 
 func (storage *TrafficStorage) CreateTrace() *TrafficTrace {
 	trace := new(TrafficTrace)
-	trace.ID = uuid.NewV1().String()
+
+	// Use an ID algo which makes them unique and ordered
+	// V1 is not byte ordered
+	//trace.ID = uuid.NewV1().String()
+    current := time.Now().UTC()
+	trace.ID = current.Format(time.RFC3339Nano)
 
 	log.Printf("[DEBUG] STORAGE Created new trace with id: %s\n", trace.ID)
 

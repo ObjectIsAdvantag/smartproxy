@@ -89,7 +89,7 @@ func main() {
 		http.HandleFunc(pingRoute, func(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[INFO] hit health check")
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			fmt.Fprintf(w, `{ "name":"%s", "version":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "capture":"%v", "healthcheck":"%s, "inspect":"%s"}`, name, version, port, serve, proxyRoute, capture, healthcheck, viewerRoute)
+			fmt.Fprintf(w, `{ "name":"%s", "version":"%s", "port":"%s", "serving":"http://%s", "via":"%s", "capture":"%v", "healthcheck":"%s", "inspect":"%s"}`, name, version, port, serve, proxyRoute, capture, healthcheck, viewerRoute)
 		})
 
 		// add a default route if the proxy is not registered on /
