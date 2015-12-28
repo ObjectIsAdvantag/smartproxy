@@ -75,7 +75,7 @@ func main() {
 		proxy := CreateReverseProxy(endpoint, &proxyRoute) // *ReverseProxy
 		if capture {
 			// add middleware
-			handler := CreateCaptureMiddleware(proxy)
+			handler := CreateCaptureMiddleware(proxy, &proxyRoute)
 			http.Handle(proxyRoute, handler)
 
 			// register traffic viewer

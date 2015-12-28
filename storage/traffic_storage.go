@@ -20,11 +20,14 @@ const (
 	BOLT_BUCKET= "SmartProxy"
 )
 
+type TrafficStorageInterface interface {
+	CreateTrace() *TrafficTrace
+	StoreTrace(trace *TrafficTrace)
+}
 
 type TrafficStorage struct {
 	nature 		string 			// STORAGE_INMEMORY, STORAGE_ONDISK
 	db 			*bolt.DB 		// database
-	cursor		*bolt.Cursor 	// filled if a cursor is actually opened, nil otherwise
 }
 
 type TrafficTrace struct {
@@ -49,7 +52,7 @@ type TrafficEgress struct {
 	Bytes 		*[]byte
 }
 
-func OnDiskTrafficStorage () *TrafficStorage {
+func OnDiskTrafficStorage() *TrafficStorage {
 	// Open the datafile in current directory, is created if it doesn't exist.
 	dbFile := "capture.db"
 	db, err := bolt.Open(dbFile, 0600, nil)
@@ -70,7 +73,7 @@ func OnDiskTrafficStorage () *TrafficStorage {
 		return nil
 	})
 
-	return &TrafficStorage{STORAGE_ONDISK, db, nil}
+	return &TrafficStorage{STORAGE_ONDISK, db}
 }
 
 
@@ -108,8 +111,7 @@ func (storage *TrafficStorage) StoreTrace(trace *TrafficTrace) {
 	})
 }
 
-func (storage *TrafficStorage) GetTraces() int {
-	_ = "breakpoint"
+func (storage *TrafficStorage) GetTraces(w io.Writer, route string) int {
 	log.Printf("[DEBUG] STORAGE fetching all traces\n")
 
 	count := 0
@@ -128,17 +130,27 @@ func (storage *TrafficStorage) GetTraces() int {
 
 
 
-func (storage *TrafficStorage) DisplayLatestTraces(w io.Writer, max int) int {
+func (storage *TrafficStorage) DisplayLatestTraces(w io.Writer, route string, max int) int {
 	log.Printf("[DEBUG] STORAGE fetching last traces, %d max\n", max)
 
 	count := 0
-	storage.cursor = nil
+	total := 0
 
 	storage.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BOLT_BUCKET))
+		total = b.Stats().KeyN
 		c := b.Cursor()
-		for k, _ := c.Last(); k != nil; k, _ = c.Prev() {
-			fmt.Fprintf(w, "<p>Captured : %s</p>\n", k)
+
+		for key, bytes := c.Last(); key != nil; key, bytes = c.Prev() {
+			var trace TrafficTrace
+			err := json.Unmarshal(bytes, &trace)
+			if err != nil {
+				log.Printf("[DEBUG] STORAGE json decode failed for bytes %s\n", bytes)
+				continue
+			}
+
+			fmt.Fprintf(w, `<p>%v <a href="%s/%s">%s</a> %v  %s</p>`, trace.Start.Format(time.Stamp), route, trace.ID, trace.HttpMethod, trace.HttpStatus, trace.URI)
+
 			count++
 			if count >= max {
 				break;
@@ -147,16 +159,18 @@ func (storage *TrafficStorage) DisplayLatestTraces(w io.Writer, max int) int {
 		return nil
 	})
 
-	if count == 0 {
+	if total == 0 {
 		// No traffic captured yet
 		fmt.Fprintf(w, "<p>No traffic so far</p>\n")
+	} else {
+		fmt.Fprintf(w, "<p>%v/%v traces</p>\n", count, total)
 	}
 
 	return count
 }
 
 
-func (storage *TrafficStorage) DisplayLastTrace(w io.Writer) {
+func (storage *TrafficStorage) DisplayLastTrace(w io.Writer, route string,) {
 	log.Printf("[DEBUG] STORAGE fetching last trace\n")
 
 	var trace TrafficTrace
@@ -172,7 +186,7 @@ func (storage *TrafficStorage) DisplayLastTrace(w io.Writer) {
 			return nil
 		}
 
-		storage.cursor = cursor
+		//storage.cursor = cursor
 		err := json.Unmarshal(bytes, &trace)
 		if err != nil {
 			log.Printf("[DEBUG] STORAGE json decode failed for bytes %s\n", bytes)
@@ -183,12 +197,12 @@ func (storage *TrafficStorage) DisplayLastTrace(w io.Writer) {
 		return nil
 	})
 
-	displayTrace(w, &trace)
+	displayTraceAsJSON(w, &trace)
 	return
 }
 
 
-func (storage *TrafficStorage) DisplayFirstTrace(w io.Writer) {
+func (storage *TrafficStorage) DisplayFirstTrace(w io.Writer, route string,) {
 	log.Printf("[DEBUG] STORAGE fetching first trace\n")
 
 	var trace TrafficTrace
@@ -204,7 +218,7 @@ func (storage *TrafficStorage) DisplayFirstTrace(w io.Writer) {
 			return nil
 		}
 
-		storage.cursor = cursor
+		//storage.cursor = cursor
 		err := json.Unmarshal(bytes, &trace)
 		if err != nil {
 			log.Printf("[DEBUG] STORAGE json decode failed for bytes %s\n", bytes)
@@ -215,15 +229,15 @@ func (storage *TrafficStorage) DisplayFirstTrace(w io.Writer) {
 		return nil
 	})
 
-	displayTrace(w, &trace)
+	displayTraceAsJSON(w, &trace)
 	return
 }
 
 
-func (storage *TrafficStorage) DisplayPrevTrace(w io.Writer) {
+func (storage *TrafficStorage) DisplayPrevTrace(w io.Writer, route string,) {
 	log.Printf("[DEBUG] STORAGE fetching first trace\n")
 
-	if (storage.cursor == nil) {
+	/*if (storage.cursor == nil) {
 		log.Printf("[DEBUG] STORAGE cursor not initialized, going to first trace\n")
 		storage.DisplayFirstTrace(w)
 		return
@@ -236,6 +250,7 @@ func (storage *TrafficStorage) DisplayPrevTrace(w io.Writer) {
 		return
 	}
 
+
 	var trace TrafficTrace
 	err := json.Unmarshal(bytes, &trace)
 	if err != nil {
@@ -244,14 +259,16 @@ func (storage *TrafficStorage) DisplayPrevTrace(w io.Writer) {
 		return
 	}
 
-	displayTrace(w, &trace)
+	displayTraceAsJSON(w, &trace)
+	*/
 	return
 }
 
 
-func (storage *TrafficStorage) DisplayNextTrace(w io.Writer) {
+func (storage *TrafficStorage) DisplayNextTrace(w io.Writer, route string,) {
 	log.Printf("[DEBUG] STORAGE fetching next trace\n")
 
+	/*
 	if (storage.cursor == nil) {
 		log.Printf("[DEBUG] STORAGE cursor not initialized, going to first trace\n")
 		storage.DisplayFirstTrace(w)
@@ -265,6 +282,7 @@ func (storage *TrafficStorage) DisplayNextTrace(w io.Writer) {
 		return
 	}
 
+
 	var trace TrafficTrace
 	err := json.Unmarshal(bytes, &trace)
 	if err != nil {
@@ -274,11 +292,12 @@ func (storage *TrafficStorage) DisplayNextTrace(w io.Writer) {
 	}
 
 	displayTrace(w, &trace)
+	*/
 	return
 }
 
 
-func displayTrace(w io.Writer, trace *TrafficTrace) {
+func displayTraceAsHTML(w io.Writer, trace *TrafficTrace) {
 	fmt.Fprintf(w, "<p>ID : %s</p>", trace.ID)
 	fmt.Fprintf(w, "<p>Method : %s</p>", trace.HttpMethod)
 	fmt.Fprintf(w, "<p>URI : %s</p>", trace.URI)
@@ -292,6 +311,22 @@ func displayTrace(w io.Writer, trace *TrafficTrace) {
 
 	fmt.Fprintf(w, "<p>Incoming : %s</p>", string(*trace.Ingress.Bytes))
 	fmt.Fprintf(w, "<p>Outgoing : %s</p>", string(*trace.Egress.Bytes))
+}
+
+func displayTraceAsJSON(w io.Writer, trace *TrafficTrace) {
+	fmt.Fprintf(w, `{ "id":"%s", `, trace.ID)
+	fmt.Fprintf(w, `"Method" : "%s", `, trace.HttpMethod)
+	fmt.Fprintf(w, `"URI" : "%s", `, trace.URI)
+	fmt.Fprintf(w, `"Status" : ""%v", `, trace.HttpStatus)
+	start := time.Time(trace.Start)
+	end := time.Time(trace.End)
+	fmt.Fprintf(w, `"Duration" : "%v", `, end.Sub(start))
+	fmt.Fprintf(w, `"Started at" : "%v", `, start)
+	fmt.Fprintf(w, `"Completed at" : "%v", `, end)
+	fmt.Fprintf(w, `"ResponseLength" : "%v", `, trace.Length)
+
+	fmt.Fprintf(w, `"Incoming" : {%s}, `, string(*trace.Ingress.Bytes))
+	fmt.Fprintf(w, `"Outgoing" : {%s} }`, string(*trace.Egress.Bytes))
 }
 
 

@@ -9,6 +9,7 @@ package main
 import (
 	"log"
 	"time"
+	"strings"
 
 	"net/http"
 	"net/http/httputil"
@@ -20,7 +21,7 @@ import (
 var DB *storage.TrafficStorage = storage.OnDiskTrafficStorage()
 
 
-func CreateTrafficDumper(proxy *httputil.ReverseProxy) http.Handler {
+func CreateTrafficDumper(proxy *httputil.ReverseProxy, pattern *string) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -29,7 +30,7 @@ func CreateTrafficDumper(proxy *httputil.ReverseProxy) http.Handler {
 		if err == nil {
 			trace := DB.CreateTrace()
 			trace.Start = start
-			trace.URI = r.URL.Path
+			trace.URI = "/" + strings.TrimPrefix(r.URL.Path, *pattern)
 			trace.HttpStatus = http.StatusOK
 			trace.HttpMethod = r.Method
 			trace.Ingress = &storage.TrafficIngress{&requestBytes}

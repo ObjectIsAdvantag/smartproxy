@@ -25,7 +25,7 @@ func AddTrafficViewer(route string) {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			fmt.Fprint(w, "<html><head><title>Traffic inspection</title></head><body><h1>Traffic inspection</h1>");
 
-			DB.DisplayLatestTraces(w, 10)
+			DB.DisplayLatestTraces(w, route, 20)
 
 			fmt.Fprint(w, "</body></html>")
 			return
@@ -47,7 +47,7 @@ func AddTrafficViewer(route string) {
 		if isHuman() {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			fmt.Fprint(w, "<html><head><title>Traffic inspector</title></head><body><h1>Last capture</h1>");
-			DB.DisplayLastTrace(w)
+			DB.DisplayLastTrace(w, route)
 			fmt.Fprint(w, "</body></html>")
 
 			return
@@ -69,7 +69,7 @@ func AddTrafficViewer(route string) {
 		if isHuman() {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			fmt.Fprint(w, "<html><head><title>Traffic inspector</title></head><body><h1>Last capture</h1>");
-			DB.DisplayFirstTrace(w)
+			DB.DisplayFirstTrace(w, route)
 			fmt.Fprint(w, "</body></html>")
 
 			return
@@ -91,7 +91,7 @@ func AddTrafficViewer(route string) {
 		if isHuman() {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			fmt.Fprint(w, "<html><head><title>Traffic inspector</title></head><body><h1>Last capture</h1>");
-			DB.DisplayNextTrace(w)
+			DB.DisplayNextTrace(w, route)
 			fmt.Fprint(w, "</body></html>")
 
 			return
@@ -113,7 +113,7 @@ func AddTrafficViewer(route string) {
 		if isHuman() {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			fmt.Fprint(w, "<html><head><title>Traffic inspector</title></head><body><h1>Last capture</h1>");
-			DB.DisplayPrevTrace(w)
+			DB.DisplayPrevTrace(w, route)
 			fmt.Fprint(w, "</body></html>")
 
 			return

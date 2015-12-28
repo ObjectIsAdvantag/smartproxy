@@ -26,9 +26,9 @@ func CreateReverseProxy(target *url.URL, pattern *string) *httputil.ReverseProxy
 	return &httputil.ReverseProxy{Director: director}
 }
 
-func CreateCaptureMiddleware(proxy *httputil.ReverseProxy) http.Handler {
+func CreateCaptureMiddleware(proxy *httputil.ReverseProxy, pattern *string) http.Handler {
 	log.Printf("[INFO] Adding Middleware to capture traffic\n")
-	return CreateTrafficDumper(proxy)
+	return CreateTrafficDumper(proxy, pattern)
 }
 
 
