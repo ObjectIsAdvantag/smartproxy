@@ -82,7 +82,7 @@ func (storage *TrafficStorage) close() {
 
 func (storage *TrafficStorage) CreateTrace() *TrafficTrace {
 	trace := new(TrafficTrace)
-	trace.ID = uuid.NewV4().String()
+	trace.ID = uuid.NewV1().String()
 
 	log.Printf("[DEBUG] STORAGE Created new trace with id: %s\n", trace.ID)
 
@@ -137,8 +137,9 @@ func (storage *TrafficStorage) DisplayLatestTraces(w io.Writer, max int) int {
 	storage.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BOLT_BUCKET))
 		c := b.Cursor()
-		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			fmt.Fprintf(w, "<p>Captured : id=%s, value=%s</p>\n", k, v)
+		for k, _ := c.Last(); k != nil; k, _ = c.Prev() {
+			fmt.Fprintf(w, "<p>Captured : %s</p>\n", k)
+			count++
 			if count >= max {
 				break;
 			}
@@ -222,7 +223,6 @@ func (storage *TrafficStorage) DisplayFirstTrace(w io.Writer) {
 func (storage *TrafficStorage) DisplayPrevTrace(w io.Writer) {
 	log.Printf("[DEBUG] STORAGE fetching first trace\n")
 
-
 	if (storage.cursor == nil) {
 		log.Printf("[DEBUG] STORAGE cursor not initialized, going to first trace\n")
 		storage.DisplayFirstTrace(w)
@@ -251,7 +251,6 @@ func (storage *TrafficStorage) DisplayPrevTrace(w io.Writer) {
 
 func (storage *TrafficStorage) DisplayNextTrace(w io.Writer) {
 	log.Printf("[DEBUG] STORAGE fetching next trace\n")
-
 
 	if (storage.cursor == nil) {
 		log.Printf("[DEBUG] STORAGE cursor not initialized, going to first trace\n")

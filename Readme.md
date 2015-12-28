@@ -2,7 +2,8 @@
 
 Be a companion for Web API developers by mocking, filtering, replaying, "diff'ing" HTTP req/responses
 
-It may also help Web API hosting via diff'ing between API versions and taking actions when errors.
+It may also help Web API hosting via diff'ing between API versions and taking actions when unexpected errors occur. 
+Note : by unexpected, we intend that traffic differs from prevailing traffic.
 
 
 # Architecture
