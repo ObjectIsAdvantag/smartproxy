@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"encoding/json"
-
 	bolt "github.com/boltdb/bolt"
 
 	//uuid "github.com/satori/go.uuid"
-	"io"
+
+	"encoding/json"
+	"net/http"
+
 )
 
 const (
@@ -116,7 +117,7 @@ func (storage *TrafficStorage) StoreTrace(trace *TrafficTrace) {
 	})
 }
 
-func (storage *TrafficStorage) GetTraces(w io.Writer, route string) int {
+func (storage *TrafficStorage) GetTraces(w http.ResponseWriter, route string) int {
 	log.Printf("[DEBUG] STORAGE fetching all traces\n")
 
 	count := 0
@@ -135,7 +136,7 @@ func (storage *TrafficStorage) GetTraces(w io.Writer, route string) int {
 
 
 
-func (storage *TrafficStorage) DisplayLatestTraces(w io.Writer, route string, max int) int {
+func (storage *TrafficStorage) DisplayLatestTraces(w http.ResponseWriter, route string, max int) int {
 	log.Printf("[DEBUG] STORAGE fetching last traces, %d max\n", max)
 
 	count := 0
@@ -175,19 +176,21 @@ func (storage *TrafficStorage) DisplayLatestTraces(w io.Writer, route string, ma
 }
 
 
-func (storage *TrafficStorage) DisplayLastTrace(w io.Writer, route string,) {
-	log.Printf("[DEBUG] STORAGE fetching last trace\n")
+func (storage *TrafficStorage) DisplayTraceDetails(w http.ResponseWriter, route string, id string) {
+	log.Printf("[DEBUG] STORAGE details for trace: %s\n", id)
 
 	var trace TrafficTrace
 
 	storage.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(BOLT_BUCKET))
 		cursor := bucket.Cursor()
-		key, bytes := cursor.Last()
+		key, bytes := cursor.Seek([]byte(id))
 
 		if key == nil {
-			log.Printf("[DEBUG] STORAGE last trace not found, no capture presumed\n")
-			fmt.Fprintf(w, "<p>No traffic capture found</p>")
+			log.Printf("[DEBUG] STORAGE trace with id %s not found\n", id)
+			w.WriteHeader(http.StatusBadRequest)
+
+			fmt.Fprintf(w, `{ "error":"not found", "description":"no trace with id %s"`, id)
 			return nil
 		}
 
@@ -195,7 +198,7 @@ func (storage *TrafficStorage) DisplayLastTrace(w io.Writer, route string,) {
 		err := json.Unmarshal(bytes, &trace)
 		if err != nil {
 			log.Printf("[DEBUG] STORAGE json decode failed for bytes %s\n", bytes)
-			fmt.Fprintf(w, "<p>Cannot read traffic data</p>")
+			fmt.Fprintf(w, "<p>Cannot read captured traffic for trace id: %s</p>", id)
 			return nil
 		}
 
@@ -207,102 +210,7 @@ func (storage *TrafficStorage) DisplayLastTrace(w io.Writer, route string,) {
 }
 
 
-func (storage *TrafficStorage) DisplayFirstTrace(w io.Writer, route string,) {
-	log.Printf("[DEBUG] STORAGE fetching first trace\n")
-
-	var trace TrafficTrace
-
-	storage.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(BOLT_BUCKET))
-		cursor := bucket.Cursor()
-		key, bytes := cursor.First()
-
-		if key == nil {
-			log.Printf("[DEBUG] STORAGE first trace not found, no capture presumed\n")
-			fmt.Fprintf(w, "<p>No traffic capture found</p>")
-			return nil
-		}
-
-		//storage.cursor = cursor
-		err := json.Unmarshal(bytes, &trace)
-		if err != nil {
-			log.Printf("[DEBUG] STORAGE json decode failed for bytes %s\n", bytes)
-			fmt.Fprintf(w, "<p>Cannot read traffic data</p>")
-			return nil
-		}
-
-		return nil
-	})
-
-	displayTraceAsJSON(w, &trace)
-	return
-}
-
-
-func (storage *TrafficStorage) DisplayPrevTrace(w io.Writer, route string,) {
-	log.Printf("[DEBUG] STORAGE fetching first trace\n")
-
-	/*if (storage.cursor == nil) {
-		log.Printf("[DEBUG] STORAGE cursor not initialized, going to first trace\n")
-		storage.DisplayFirstTrace(w)
-		return
-	}
-
-	key, bytes := storage.cursor.Prev()
-	if key == nil {
-		log.Printf("[DEBUG] STORAGE first trace not found, no capture presumed\n")
-		fmt.Fprintf(w, "<p>No traffic capture found</p>")
-		return
-	}
-
-
-	var trace TrafficTrace
-	err := json.Unmarshal(bytes, &trace)
-	if err != nil {
-		log.Printf("[DEBUG] STORAGE json decode failed for bytes %s\n", bytes)
-		fmt.Fprintf(w, "<p>Cannot read traffic data</p>")
-		return
-	}
-
-	displayTraceAsJSON(w, &trace)
-	*/
-	return
-}
-
-
-func (storage *TrafficStorage) DisplayNextTrace(w io.Writer, route string,) {
-	log.Printf("[DEBUG] STORAGE fetching next trace\n")
-
-	/*
-	if (storage.cursor == nil) {
-		log.Printf("[DEBUG] STORAGE cursor not initialized, going to first trace\n")
-		storage.DisplayFirstTrace(w)
-		return
-	}
-
-	key, bytes := storage.cursor.Next()
-	if key == nil {
-		log.Printf("[DEBUG] STORAGE first trace not found, no capture presumed\n")
-		fmt.Fprintf(w, "<p>No traffic capture found</p>")
-		return
-	}
-
-
-	var trace TrafficTrace
-	err := json.Unmarshal(bytes, &trace)
-	if err != nil {
-		log.Printf("[DEBUG] STORAGE json decode failed for bytes %s\n", bytes)
-		fmt.Fprintf(w, "<p>Cannot read traffic data</p>")
-		return
-	}
-
-	displayTrace(w, &trace)
-	*/
-	return
-}
-
-
-func displayTraceAsHTML(w io.Writer, trace *TrafficTrace) {
+func displayTraceAsHTML(w http.ResponseWriter, trace *TrafficTrace) {
 	fmt.Fprintf(w, "<p>ID : %s</p>", trace.ID)
 	fmt.Fprintf(w, "<p>Method : %s</p>", trace.HttpMethod)
 	fmt.Fprintf(w, "<p>URI : %s</p>", trace.URI)
@@ -318,20 +226,24 @@ func displayTraceAsHTML(w io.Writer, trace *TrafficTrace) {
 	fmt.Fprintf(w, "<p>Outgoing : %s</p>", string(*trace.Egress.Bytes))
 }
 
-func displayTraceAsJSON(w io.Writer, trace *TrafficTrace) {
+func displayTraceAsJSON(w http.ResponseWriter, trace *TrafficTrace) {
 	fmt.Fprintf(w, `{ "id":"%s", `, trace.ID)
 	fmt.Fprintf(w, `"Method" : "%s", `, trace.HttpMethod)
 	fmt.Fprintf(w, `"URI" : "%s", `, trace.URI)
-	fmt.Fprintf(w, `"Status" : ""%v", `, trace.HttpStatus)
+
+	//TODO provide URL to display Request Headers & Payload
+	//fmt.Fprintf(w, `"Request" : "%s", `, string(*trace.Ingress.Bytes))
+
+
+	fmt.Fprintf(w, `"Status" : "%v", `, trace.HttpStatus)
+	//TODO provide URL to display Reponsae Body
+	// fmt.Fprintf(w, `"Response" : "%s", `, string(*trace.Egress.Bytes))
+	fmt.Fprintf(w, `"Length" : "%v", `, trace.Length)
 	start := time.Time(trace.Start)
 	end := time.Time(trace.End)
-	fmt.Fprintf(w, `"Duration" : "%v", `, end.Sub(start))
-	fmt.Fprintf(w, `"Started at" : "%v", `, start)
-	fmt.Fprintf(w, `"Completed at" : "%v", `, end)
-	fmt.Fprintf(w, `"ResponseLength" : "%v", `, trace.Length)
-
-	fmt.Fprintf(w, `"Incoming" : {%s}, `, string(*trace.Ingress.Bytes))
-	fmt.Fprintf(w, `"Outgoing" : {%s} }`, string(*trace.Egress.Bytes))
+	fmt.Fprintf(w, `"Start" : "%v", `, start)
+	fmt.Fprintf(w, `"End" : "%v", `, end)
+	fmt.Fprintf(w, `"Duration" : "%v" }`, end.Sub(start))
 }
 
 

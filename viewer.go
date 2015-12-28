@@ -8,6 +8,7 @@ package main
 import (
 	"log"
 	"fmt"
+	"strings"
 
 	"net/http"
 )
@@ -37,93 +38,29 @@ func AddTrafficViewer(route string) {
 		log.Fatal("Not implemented")
 	})
 
-	http.HandleFunc(route+"/last", func(w http.ResponseWriter, req *http.Request) {
+	http.HandleFunc(route+"/", func(w http.ResponseWriter, req *http.Request) {
 		log.Printf("[DEBUG] VIEWER ---> %s %s", req.Method, req.URL.String())
 
 		if !authorizeOnlyGET(w, req) {
 			return
 		}
 
-		if isHuman() {
+		id := strings.TrimPrefix(req.URL.Path, route+"/")
+		if id == "" {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprint(w, "<html><head><title>Traffic inspector</title></head><body><h1>Last capture</h1>");
-			DB.DisplayLastTrace(w, route)
-			fmt.Fprint(w, "</body></html>")
+			fmt.Fprint(w, "<html><head><title>Traffic inspection</title></head><body><h1>Traffic inspection</h1>");
 
+			DB.DisplayLatestTraces(w, route, 20)
+
+			fmt.Fprint(w, "</body></html>")
 			return
 		}
 
-		// Not implemented
-		log.Printf("[DEBUG] VIEWER Traffic inspection for machine is not implemented yet, try same URI from a WebBrowser")
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal("Not implemented")
+ 		log.Printf("[DEBUG] VIEWER inspect trace with id %s\n", id)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		DB.DisplayTraceDetails(w, route, id)
 	})
 
-	http.HandleFunc(route+"/first", func(w http.ResponseWriter, req *http.Request) {
-		log.Printf("[DEBUG] VIEWER ---> %s %s", req.Method, req.URL.String())
-
-		if !authorizeOnlyGET(w, req) {
-			return
-		}
-
-		if isHuman() {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprint(w, "<html><head><title>Traffic inspector</title></head><body><h1>Last capture</h1>");
-			DB.DisplayFirstTrace(w, route)
-			fmt.Fprint(w, "</body></html>")
-
-			return
-		}
-
-		// Not implemented
-		log.Printf("[DEBUG] VIEWER Traffic inspection for machine is not implemented yet, try same URI from a WebBrowser")
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal("Not implemented")
-	})
-
-	http.HandleFunc(route+"/next", func(w http.ResponseWriter, req *http.Request) {
-		log.Printf("[DEBUG] VIEWER ---> %s %s", req.Method, req.URL.String())
-
-		if !authorizeOnlyGET(w, req) {
-			return
-		}
-
-		if isHuman() {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprint(w, "<html><head><title>Traffic inspector</title></head><body><h1>Last capture</h1>");
-			DB.DisplayNextTrace(w, route)
-			fmt.Fprint(w, "</body></html>")
-
-			return
-		}
-
-		// Not implemented
-		log.Printf("[DEBUG] VIEWER Traffic inspection for machine is not implemented yet, try same URI from a WebBrowser")
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal("Not implemented")
-	})
-
-	http.HandleFunc(route+"/prev", func(w http.ResponseWriter, req *http.Request) {
-		log.Printf("[DEBUG] VIEWER ---> %s %s", req.Method, req.URL.String())
-
-		if !authorizeOnlyGET(w, req) {
-			return
-		}
-
-		if isHuman() {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprint(w, "<html><head><title>Traffic inspector</title></head><body><h1>Last capture</h1>");
-			DB.DisplayPrevTrace(w, route)
-			fmt.Fprint(w, "</body></html>")
-
-			return
-		}
-
-		// Not implemented
-		log.Printf("[DEBUG] VIEWER Traffic inspection for machine is not implemented yet, try same URI from a WebBrowser")
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal("Not implemented")
-	})
 }
 
 func isHuman() bool {

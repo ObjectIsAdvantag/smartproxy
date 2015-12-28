@@ -24,29 +24,33 @@ var DB *storage.TrafficStorage = storage.OnDiskTrafficStorage()
 func CreateTrafficDumper(proxy *httputil.ReverseProxy, pattern *string) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
 
 		requestBytes, err := httputil.DumpRequest(r, true)
-		if err == nil {
-			trace := DB.CreateTrace()
-			trace.Start = start
-			trace.URI = "/" + strings.TrimPrefix(r.URL.Path, *pattern)
-			trace.HttpStatus = http.StatusOK
-			trace.HttpMethod = r.Method
-			trace.Ingress = &storage.TrafficIngress{&requestBytes}
-			DB.StoreTrace(trace)
-			log.Printf("[DEBUG] PROXY traffic for request %s dumped with id: %s\n", trace.URI, trace.ID)
-
-			wrapped := NewCaptureWriter(w, trace)
+		if err != nil {
+			log.Printf("[WARNING] PROXY could not dump traffic for request %s: %s\n", r.URL.Path, err)
 
 			// TODO error handling
-			proxy.ServeHTTP(wrapped, r)
-			return
+			proxy.ServeHTTP(w, r)
 		}
 
-		log.Printf("[WARNING] PROXY could not dump traffic for request %s: %s\n", r.URL.Path, err)
+		trace := DB.CreateTrace()
+		trace.URI = "/" + strings.TrimPrefix(r.URL.Path, *pattern)
+		trace.HttpStatus = http.StatusOK
+		trace.HttpMethod = r.Method
+		trace.Ingress = &storage.TrafficIngress{&requestBytes}
+		log.Printf("[DEBUG] PROXY traffic for request %s dumped with id: %s\n", trace.URI, trace.ID)
+
+		wrapped := NewCaptureWriter(w, trace)
+
+		trace.Start = time.Now()
+
 		// TODO error handling
-		proxy.ServeHTTP(w, r)
+		proxy.ServeHTTP(wrapped, r)
+
+		trace.End = time.Now()
+		DB.StoreTrace(trace)
+
+		return
 	})
 }
 
@@ -97,8 +101,8 @@ func (cw captureWriter) Write(bytes []byte) (int, error) {
 	cw.trace.Length += size
 	cw.trace.End = time.Now()
 
-	log.Printf("[DEBUG] PROXY egress for %s:\n%s", cw.trace.URI, string(bytes))
-	DB.StoreTrace(cw.trace)
+	//log.Printf("[DEBUG] PROXY egress for %s:\n%s", cw.trace.URI, string(bytes))
+	//DB.StoreTrace(cw.trace)
 
 	return size, err
 }

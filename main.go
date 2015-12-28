@@ -38,7 +38,7 @@ import (
 // It is also set by the linker when fabio
 // is built via the Makefile or the build/docker.sh
 // script to ensure the correct version nubmer
-var version = "v0.3"
+var version = "v0.4"
 
 
 func main() {

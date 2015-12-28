@@ -39,11 +39,9 @@ SmartProxy acts as a reverse proxy that
     
 [x] inspect traffic
    - added route to inspect captured traffic, /traffic  
-   - display traffic in HTML page (no json)
-   - latests traces, last/first trace
-   - TODO : next/prev
-   - TODO : update documentation
-   - TODO : release tag v0.4
+   - display list of captured traffic in HTML page (no json, 20 latest traces) 
+   - display detailled trace in json
+   - release tag v0.4
    
 [ ] extract API model
 
@@ -59,22 +57,28 @@ SmartProxy acts as a reverse proxy that
 
 Go to github / releases,
 
-Pick the executables that suits your platform : smart-proxy and dummy test service
+Pick the executables that suits your platform : smartproxy and dummy test service
 
 Run it
 
 ```
 # on linux
-> smart-proxy -route proxy -port 9090 -serve 127.0.0.1:8080
+> smart-proxy -route proxy -port 9090 -serve 127.0.0.1:8080 -capture
 > tests/dummy
 ```
 
 ```
 # on windows
-> ./smart-proxy.exe -route proxy -port 9090 -serve 127.0.0.1:8080
+> ./smart-proxy.exe -route proxy -port 9090 -serve 127.0.0.1:8080 -capture
 > tests/dummy.exe
 ```
 
+Then inspect traffic via your web brower, 
+
+- http://localhost:9090/traffic : display the latest 10 traces
+- http://localhost:9090/traffic/<trace_id> : display trace details in json
+
+ 
 ## You gopher (have golang installed locally)
 
 1. start the service you want to proxy, or launch the provides test service
@@ -97,12 +101,12 @@ Run it
 - Clone this repo
 - Pick the linux executable from releases or build it with command : "> make linux"
 - Build the docker image with the provided Dockerfile, "> docker build  -t objectisadvantag/smartproxy ."
-- Run it "> docker run -d -p 9090:9090 objectisadvantag/smartproxy:latest -route proxy -port 9090 -serve 127.0.0.1:8080"
+- Run it "> docker run -d -p 9090:9090 objectisadvantag/smartproxy:latest -route proxy -port 9090 -serve 127.0.0.1:8080 -capture"
 
 ```
 > make linux
 > docker build -t <image-name> .
-> docker run -d -p 9090:9090 <image-name> -route proxy -port 9090 -serve 127.0.0.1:8080
+> docker run -d -p 9090:9090 <image-name> -route proxy -port 9090 -serve 127.0.0.1:8080 -capture
 ```
 
 
