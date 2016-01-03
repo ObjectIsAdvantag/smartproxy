@@ -67,6 +67,7 @@ func main() {
 	log.Printf("[INFO] Starting %s, version: %s", name, version)
 
 	// start http server
+	//runtime.GOMAXPROCS(runtime.NumCPU())
 	go func() {
 		// register reverse proxy and middlewares if capture mode
 		endpoint := &url.URL{Scheme:"http", Host:serve}

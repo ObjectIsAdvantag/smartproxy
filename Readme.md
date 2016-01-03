@@ -33,19 +33,21 @@ SmartProxy acts as a reverse proxy that
    
 [X] store traffic on-disk
    - tag each flow (req/resp) with a uuid
-   - create struct to store traffic : ingress, egress, synthesis
+   - create go struct to store traffic : ingress, egress, synthesis
    - store traffic via bolt
    - release tag v0.3
     
-[x] inspect traffic
+[X] inspect traffic
    - added route to inspect captured traffic, /traffic  
    - display list of captured traffic in HTML page (no json, 20 latest traces) 
-   - display detailled trace in json
+   - display detailed trace in json
    - release tag v0.4
    
-[ ] extract API model
+[ ] extract API model from traffic analysis
 
 [ ] enrich model
+
+[ ] Realtime traffic capture experience
 
 [ ] admin api
    - dynamically modify configuration (change proxy address, capture on/off, erase capture database)
