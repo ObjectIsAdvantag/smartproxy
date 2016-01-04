@@ -31,15 +31,7 @@ import (
 )
 
 
-// version contains the version number
-// It is set by build/release.sh for tagged releases
-// so that 'go get' just works.
-//
-// It is also set by the linker when fabio
-// is built via the Makefile or the build/docker.sh
-// script to ensure the correct version nubmer
-var version = "v0.4"
-
+const version = "v0.4"
 
 func main() {
 	var showVersion, capture bool
