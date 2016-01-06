@@ -23,12 +23,7 @@ func AddTrafficViewer(route string) {
 		}
 
 		if isHuman() {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprint(w, "<html><head><title>Traffic inspection</title></head><body><h1>Traffic inspection</h1>");
-
 			DB.DisplayLatestTraces(w, route, 20)
-
-			fmt.Fprint(w, "</body></html>")
 			return
 		}
 
@@ -47,17 +42,11 @@ func AddTrafficViewer(route string) {
 
 		id := strings.TrimPrefix(req.URL.Path, route+"/")
 		if id == "" {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			fmt.Fprint(w, "<html><head><title>Traffic inspection</title></head><body><h1>Traffic inspection</h1>");
-
 			DB.DisplayLatestTraces(w, route, 20)
-
-			fmt.Fprint(w, "</body></html>")
 			return
 		}
 
- 		log.Printf("[DEBUG] VIEWER inspect trace with id %s\n", id)
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		log.Printf("[DEBUG] VIEWER inspect trace with id %s\n", id)
 		DB.DisplayTraceDetails(w, route, id)
 	})
 

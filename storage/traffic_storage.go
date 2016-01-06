@@ -99,7 +99,7 @@ func (storage *TrafficStorage) CreateTrace() *TrafficTrace {
 }
 
 func (storage *TrafficStorage) StoreTrace(trace *TrafficTrace) {
-	log.Printf("[DEBUG] STORAGE Storing trace ", trace.ID)
+	log.Printf("[DEBUG] STORAGE Storing trace id: %s\n", trace.ID)
 
 	storage.db.Update(func(tx *bolt.Tx) error {
 		encoded, err1 := json.Marshal(trace)
@@ -139,6 +139,9 @@ func (storage *TrafficStorage) GetTraces(w http.ResponseWriter, route string) in
 func (storage *TrafficStorage) DisplayLatestTraces(w http.ResponseWriter, route string, max int) int {
 	log.Printf("[DEBUG] STORAGE fetching last traces, %d max\n", max)
 
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, "<html><head><title>Traffic inspection</title></head><body><h1>Traffic inspection</h1>");
+
 	count := 0
 	total := 0
 
@@ -171,6 +174,8 @@ func (storage *TrafficStorage) DisplayLatestTraces(w http.ResponseWriter, route 
 	} else {
 		fmt.Fprintf(w, "<p>%v/%v traces</p>\n", count, total)
 	}
+
+	fmt.Fprint(w, "</body></html>")
 
 	return count
 }
@@ -205,12 +210,48 @@ func (storage *TrafficStorage) DisplayTraceDetails(w http.ResponseWriter, route 
 		return nil
 	})
 
-	displayTraceAsJSON(w, &trace)
+	displayTraceAsJSON(w, &trace, route)
+	return
+}
+
+
+func (storage *TrafficStorage) DisplayTraceIngress(w http.ResponseWriter, route string, id string) {
+	log.Printf("[DEBUG] STORAGE ingress details for trace: %s\n", id)
+
+	var trace TrafficTrace
+
+	storage.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(BOLT_BUCKET))
+		cursor := bucket.Cursor()
+		key, bytes := cursor.Seek([]byte(id))
+
+		if key == nil {
+			log.Printf("[DEBUG] STORAGE trace with id %s not found\n", id)
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(w, `{ "error":"not found", "description":"no trace with id %s"`, id)
+			return nil
+		}
+
+		//storage.cursor = cursor
+		err := json.Unmarshal(bytes, &trace)
+		if err != nil {
+			log.Printf("[DEBUG] STORAGE json decode failed for bytes %s\n", bytes)
+			fmt.Fprintf(w, "<p>Cannot read captured traffic for trace id: %s</p>", id)
+			return nil
+		}
+
+		return nil
+	})
+
+	displayIngressAsTXT(w, &trace, route)
 	return
 }
 
 
 func displayTraceAsHTML(w http.ResponseWriter, trace *TrafficTrace) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, "<html><head><title>Traffic inspection</title></head><body><h1>Traffic inspection</h1>");
+
 	fmt.Fprintf(w, "<p>ID : %s</p>", trace.ID)
 	fmt.Fprintf(w, "<p>Method : %s</p>", trace.HttpMethod)
 	fmt.Fprintf(w, "<p>URI : %s</p>", trace.URI)
@@ -224,20 +265,28 @@ func displayTraceAsHTML(w http.ResponseWriter, trace *TrafficTrace) {
 
 	fmt.Fprintf(w, "<p>Incoming : %s</p>", string(*trace.Ingress.Bytes))
 	fmt.Fprintf(w, "<p>Outgoing : %s</p>", string(*trace.Egress.Bytes))
+
+	fmt.Fprint(w, "</body></html>")
 }
 
-func displayTraceAsJSON(w http.ResponseWriter, trace *TrafficTrace) {
+func displayTraceAsJSON(w http.ResponseWriter, trace *TrafficTrace, route string) {
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
 	fmt.Fprintf(w, `{ "id":"%s", `, trace.ID)
 	fmt.Fprintf(w, `"Method" : "%s", `, trace.HttpMethod)
 	fmt.Fprintf(w, `"URI" : "%s", `, trace.URI)
 
-	//TODO provide URL to display Request Headers & Payload
-	//fmt.Fprintf(w, `"Request" : "%s", `, string(*trace.Ingress.Bytes))
-
+	fmt.Fprintf(w, `"Request" : "%s/%s/ingress", `, route, trace.ID)
+	log.Printf("[DEBUG] VIEWER ingress for trace id: %s\n", trace.ID)
+	fmt.Println(string(*trace.Ingress.Bytes))
 
 	fmt.Fprintf(w, `"Status" : "%v", `, trace.HttpStatus)
-	//TODO provide URL to display Reponsae Body
-	// fmt.Fprintf(w, `"Response" : "%s", `, string(*trace.Egress.Bytes))
+
+	fmt.Fprintf(w, `"Response" : "%s/%s/egress", `, route, trace.ID)
+	log.Printf("[DEBUG] VIEWER egress for trace id: %s\n", trace.ID)
+	fmt.Println(string(*trace.Egress.Bytes))
+
 	fmt.Fprintf(w, `"Length" : "%v", `, trace.Length)
 	start := time.Time(trace.Start)
 	end := time.Time(trace.End)
@@ -247,8 +296,9 @@ func displayTraceAsJSON(w http.ResponseWriter, trace *TrafficTrace) {
 }
 
 
-
-
+func displayIngressAsTXT(w http.ResponseWriter, trace *TrafficTrace, route string) {
+	fmt.Fprintf(w, string(*trace.Ingress.Bytes))
+}
 
 
 

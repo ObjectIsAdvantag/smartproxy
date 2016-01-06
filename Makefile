@@ -10,7 +10,7 @@ all : clean build run
 
 .PHONY: run
 run:
-	./smartproxy.exe -capture -route proxy
+	./smartproxy.exe -capture -port 9090
 
 .PHONY: build
 build:
